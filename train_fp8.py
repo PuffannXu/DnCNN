@@ -23,6 +23,7 @@ parser.add_argument("--epochs", type=int, default=50, help="Number of training e
 parser.add_argument("--milestone", type=int, default=30, help="When to decay learning rate; should be less than epochs")
 parser.add_argument("--lr", type=float, default=1e-3, help="Initial learning rate")
 parser.add_argument("--outf", type=str, default="logs", help='path of log files')
+parser.add_argument("--model_name", type=str, default="net.pth", help='int quant')
 parser.add_argument("--mode", type=str, default="S", help='with known noise level (S) or blind training (B)')
 parser.add_argument("--noiseL", type=float, default=25, help='noise level; ignored when mode=B')
 parser.add_argument("--val_noiseL", type=float, default=25, help='noise level used on validation set')
@@ -41,13 +42,61 @@ python train_fp8.py \
   --preprocess True \
   --num_of_layers 17 \
   --outf "logs/DnCNN-S-15-ReRAM" \
+  --model_name "net_fp8_hw" \
   --mode S \
   --noiseL 15 \
   --val_noiseL 15 \
   --fp_on 2 \
   --pretrain 1 \
+  --model_path "logs/DnCNN-S-15-ReRAM/net_fp8_hw.pth" 
+'''
+
+'''
+python train_fp8.py \
+  --preprocess True \
+  --num_of_layers 17 \
+  --outf "logs/DnCNN-S-15-ReRAM" \
+  --model_name "net_fp8_hw_l0" \
+  --mode S \
+  --noiseL 15 \
+  --val_noiseL 15 \
+  --fp_on 2 \
+  --left_shift_bit 0 \
+  --pretrain 1 \
   --model_path "logs/DnCNN-S-15-ReRAM/net_fp8.pth" 
 '''
+
+'''
+python train_fp8.py \
+  --preprocess True \
+  --num_of_layers 17 \
+  --outf "logs/DnCNN-S-15-ReRAM" \
+  --model_name "net_fp8_hw_layer" \
+  --mode S \
+  --noiseL 15 \
+  --val_noiseL 15 \
+  --fp_on 2 \
+  --quant_type "layer" \
+  --pretrain 1 \
+  --model_path "logs/DnCNN-S-15-ReRAM/net_fp8.pth" 
+'''
+
+'''
+python train_fp8.py \
+  --preprocess True \
+  --num_of_layers 17 \
+  --outf "logs/DnCNN-S-15-ReRAM" \
+  --model_name "net_fp8_hw_channel" \
+  --mode S \
+  --noiseL 15 \
+  --val_noiseL 15 \
+  --fp_on 2 \
+  --quant_type "channel" \
+  --pretrain 1 \
+  --model_path "logs/DnCNN-S-15-ReRAM/net_fp8.pth" 
+'''
+
+
 def main():
     # Load dataset
     print('Loading dataset ...\n')
@@ -143,7 +192,7 @@ def main():
         writer.add_image('noisy image', Imgn, epoch)
         writer.add_image('reconstructed image', Irecon, epoch)
         # save model
-        torch.save(model.state_dict(), os.path.join(opt.outf, 'net_fp8_hw.pth'))
+        torch.save(model.state_dict(), os.path.join(opt.outf, opt.model_name))
 
 if __name__ == "__main__":
     if opt.preprocess:
