@@ -18,14 +18,14 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 parser = argparse.ArgumentParser(description="DnCNN")
 parser.add_argument("--preprocess", type=bool, default=False, help='run prepare_data or not')
 parser.add_argument("--batchSize", type=int, default=128, help="Training batch size")
-parser.add_argument("--num_of_layers", type=int, default=17, help="Number of total layers")
-parser.add_argument("--epochs", type=int, default=50, help="Number of training epochs")
+parser.add_argument("--num_of_layers", type=int, default=20, help="Number of total layers")
+parser.add_argument("--epochs", type=int, default=1, help="Number of training epochs")
 parser.add_argument("--milestone", type=int, default=30, help="When to decay learning rate; should be less than epochs")
 parser.add_argument("--lr", type=float, default=1e-3, help="Initial learning rate")
 parser.add_argument("--outf", type=str, default="logs", help='path of log files')
 parser.add_argument("--mode", type=str, default="S", help='with known noise level (S) or blind training (B)')
-parser.add_argument("--noiseL", type=float, default=25, help='noise level; ignored when mode=B')
-parser.add_argument("--val_noiseL", type=float, default=25, help='noise level used on validation set')
+parser.add_argument("--noiseL", type=float, default=15, help='noise level; ignored when mode=B')
+parser.add_argument("--val_noiseL", type=float, default=15, help='noise level used on validation set')
 opt = parser.parse_args()
 
 def main():
@@ -115,7 +115,7 @@ def main():
         writer.add_image('noisy image', Imgn, epoch)
         writer.add_image('reconstructed image', Irecon, epoch)
         # save model
-        torch.save(model.state_dict(), os.path.join(opt.outfoutf, 'net.pth'))
+        torch.save(model.state_dict(), os.path.join(opt.outf, 'net.pth'))
 
 if __name__ == "__main__":
     if opt.preprocess:

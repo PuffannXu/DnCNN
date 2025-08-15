@@ -1047,10 +1047,10 @@ class Weight_fp_hw(torch.autograd.Function):
         co, ci, kx, ky = weight_n_scale.shape
         if quant_type == 'channel':
             weight_reshape = weight_n_scale.reshape([co,-1])
-            weight_align, e_max, m_sft = fp8_alignment(weight_reshape, left_shift_bit)
+            weight_align, sign, e_max, m_sft = fp8_alignment(weight_reshape, left_shift_bit)
         elif quant_type == 'layer':
             weight_reshape = weight_n_scale.reshape([1,-1])
-            weight_align, e_max, m_sft = fp8_alignment(weight_reshape, left_shift_bit)
+            weight_align, sign, e_max, m_sft = fp8_alignment(weight_reshape, left_shift_bit)
         elif quant_type == 'group':
             # 计算需要的填充数量
             total_elements = co * ci * kx * ky

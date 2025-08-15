@@ -24,6 +24,6 @@ class DnCNN(nn.Module):
             out = layer(out)
             # if isinstance(layer, nn.Conv2d):
                 # print((out<(out.min()/10)).sum()/out.numel())
-            intermediates.append(out.clone())  # 保存每层的输出
+            # intermediates.append(out.clone())  # 保存每层的输出
 
         return out
