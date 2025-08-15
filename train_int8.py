@@ -8,7 +8,7 @@ import torchvision.utils as utils
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
 from tensorboardX import SummaryWriter
-from models import DnCNN
+from DnCNN_ReRAM import DnCNN
 from dataset import prepare_data, Dataset
 from utils import *
 
@@ -26,8 +26,30 @@ parser.add_argument("--outf", type=str, default="logs", help='path of log files'
 parser.add_argument("--mode", type=str, default="S", help='with known noise level (S) or blind training (B)')
 parser.add_argument("--noiseL", type=float, default=25, help='noise level; ignored when mode=B')
 parser.add_argument("--val_noiseL", type=float, default=25, help='noise level used on validation set')
+parser.add_argument("--qn_on", type=bool, default=0, help='int quant')
+parser.add_argument("--fp_on", type=int, default=0, help='int quant')
+parser.add_argument("--weight_bit", type=int, default=8, help='int quant')
+parser.add_argument("--output_bit", type=int, default=8, help='int quant')
+parser.add_argument("--isint", type=bool, default=0, help='int quant')
+parser.add_argument("--quant_type", type=str, default='group', help='int quant')
+parser.add_argument("--left_shift_bit", type=int, default=3, help='int quant')
+parser.add_argument("--pretrain", type=bool, default=0, help='int quant')
+parser.add_argument("--model_path", type=str, default=3, help='int quant')
 opt = parser.parse_args()
-
+'''
+python train_int8.py \
+  --preprocess True \
+  --num_of_layers 17 \
+  --outf "logs/DnCNN-S-15-ReRAM" \
+  --mode S \
+  --noiseL 15 \
+  --val_noiseL 15 \
+  --qn_on 1 \
+  --weight_bit 8 \
+  --output_bit 8 \
+  --pretrain 1 \
+  --model_path "logs/net.pth" \ 
+'''
 def main():
     # Load dataset
     print('Loading dataset ...\n')
@@ -36,13 +58,21 @@ def main():
     loader_train = DataLoader(dataset=dataset_train, num_workers=4, batch_size=opt.batchSize, shuffle=True)
     print("# of training samples: %d\n" % int(len(dataset_train)))
     # Build model
-    net = DnCNN(channels=1, num_of_layers=opt.num_of_layers)
+    net = DnCNN(channels=1, num_of_layers=opt.num_of_layers, qn_on=opt.qn_on, fp_on=opt.fp_on,
+                weight_bit=opt.weight_bit, output_bit=opt.output_bit, isint=opt.isint, quant_type=opt.quant_type, left_shift_bit = opt.left_shift_bit)
     net.apply(weights_init_kaiming)
     criterion = nn.MSELoss(size_average=False)
     # Move to GPU
     device_ids = [0]
     model = nn.DataParallel(net, device_ids=device_ids).cuda()
     criterion.cuda()
+
+    if opt.pretrain:
+        print('\n Reloading checkpoint - pretrained model stored at: {} \n'.format(opt.model_path))
+        x = torch.load(opt.model_path, map_location='cuda')
+        # del x['conv1.weight']
+        model.load_state_dict(x, strict=False)
+
     # Optimizer
     optimizer = optim.Adam(model.parameters(), lr=opt.lr)
     # training
@@ -115,7 +145,7 @@ def main():
         writer.add_image('noisy image', Imgn, epoch)
         writer.add_image('reconstructed image', Irecon, epoch)
         # save model
-        torch.save(model.state_dict(), os.path.join(opt.outfoutf, 'net.pth'))
+        torch.save(model.state_dict(), os.path.join(opt.outf, 'net.pth'))
 
 if __name__ == "__main__":
     if opt.preprocess:

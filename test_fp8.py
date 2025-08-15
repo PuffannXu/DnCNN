@@ -6,18 +6,38 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
-from models import DnCNN
+from DnCNN_ReRAM import DnCNN
 from utils import *
 
-os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+# os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 parser = argparse.ArgumentParser(description="DnCNN_Test")
 parser.add_argument("--num_of_layers", type=int, default=17, help="Number of total layers")
-parser.add_argument("--logdir", type=str, default="logs/DnCNN-S-15", help='path of log files')
+parser.add_argument("--logdir", type=str, default="logs/DnCNN-S-15-ReRAM", help='path of log files')
+parser.add_argument("--model_name", type=str, default="net.pth", help='int quant')
 parser.add_argument("--test_data", type=str, default='Set12', help='test on Set12 or Set68')
 parser.add_argument("--test_noiseL", type=float, default=25, help='noise level used on test set')
+parser.add_argument("--qn_on", type=bool, default=0, help='int quant')
+parser.add_argument("--fp_on", type=int, default=1, help='int quant')
+parser.add_argument("--weight_bit", type=int, default=8, help='int quant')
+parser.add_argument("--output_bit", type=int, default=8, help='int quant')
+parser.add_argument("--isint", type=bool, default=0, help='int quant')
+parser.add_argument("--quant_type", type=str, default='group', help='int quant')
+parser.add_argument("--left_shift_bit", type=int, default=3, help='int quant')
+
 opt = parser.parse_args()
+'''
+python test_fp8.py \
+  --num_of_layers 17 \
+  --logdir "logs/DnCNN-S-15-ReRAM" \
+  --model_name "net_fp8_hw" \
+  --test_data Set12 \
+  --test_noiseL 15 \
+  --fp_on 1 \
+  --quant_type
+  --left_shift_bit 0
+'''
 
 def normalize(data):
     return data/255.
@@ -25,10 +45,12 @@ def normalize(data):
 def main():
     # Build model
     print('Loading model ...\n')
-    net = DnCNN(channels=1, num_of_layers=opt.num_of_layers)
-    device_ids = [0]
+    net = DnCNN(channels=1, num_of_layers=opt.num_of_layers, qn_on=opt.qn_on, fp_on=opt.fp_on,
+                weight_bit=opt.weight_bit, output_bit=opt.output_bit, isint=opt.isint, quant_type=opt.quant_type, left_shift_bit=opt.left_shift_bit)
+
+    device_ids = list(range(torch.cuda.device_count()))
     model = nn.DataParallel(net, device_ids=device_ids).cuda()
-    model.load_state_dict(torch.load(os.path.join(opt.logdir, 'net.pth')))
+    model.load_state_dict(torch.load(os.path.join(opt.logdir, opt.model_name)))
     model.eval()
     # load data info
     print('Loading data info ...\n')
@@ -60,4 +82,5 @@ def main():
     print("\nPSNR on test data %f" % psnr_test)
 
 if __name__ == "__main__":
+
     main()
